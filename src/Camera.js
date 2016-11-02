@@ -221,9 +221,13 @@ CameraPrototype.toScreen = function(out, v) {
 };
 
 CameraPrototype.getView = function() {
-    if (this._needsUpdate) {
-        this.updateMatrix();
+    var entity = this.entity,
+        transform = entity && (entity.components["transform.Transform3D"] || entity.components["transform.Transform2D"]);
+
+    if (transform) {
+        mat4.inverse(this._view, transform.getWorldMatrix());
     }
+
     return this._view;
 };
 
