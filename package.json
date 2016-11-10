@@ -30,8 +30,8 @@
     "zuul": "^3.11.0"
   },
   "dependencies": {
-    "@nathanfaucett/transform_components": "git@github.com:nathanfaucett/js-transform_components.git",
-    "@nathanfaucett/scene_graph": "git@github.com:nathanfaucett/js-scene_graph.git",
+    "@nathanfaucett/transform_components": "git://github.com/nathanfaucett/js-transform_components.git",
+    "@nathanfaucett/scene_graph": "git://github.com/nathanfaucett/js-scene_graph.git",
     "@nathanfaucett/mathf": "^0.0.3",
     "@nathanfaucett/vec3": "^0.0.2",
     "@nathanfaucett/mat4": "^0.0.2",
