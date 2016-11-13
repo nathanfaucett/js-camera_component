@@ -34,7 +34,7 @@
     "@nathanfaucett/scene_graph": "git://github.com/nathanfaucett/js-scene_graph.git",
     "@nathanfaucett/mathf": "^0.0.3",
     "@nathanfaucett/vec3": "^0.0.2",
-    "@nathanfaucett/mat4": "^0.0.2",
+    "@nathanfaucett/mat4": "^0.0.3",
     "@nathanfaucett/color": "^0.0.2",
     "@nathanfaucett/is_number": "^0.0.1",
     "@nathanfaucett/is_null_or_undefined": "^0.0.1"
