@@ -3,6 +3,7 @@ var sceneGraph = require("@nathanfaucett/scene_graph"),
     mathf = require("@nathanfaucett/mathf"),
     vec3 = require("@nathanfaucett/vec3"),
     mat4 = require("@nathanfaucett/mat4"),
+    mat32 = require("@nathanfaucett/mat32"),
     color = require("@nathanfaucett/color"),
     isNullOrUndefined = require("@nathanfaucett/is_null_or_undefined"),
     CameraManager = require("./CameraManager");
@@ -43,7 +44,12 @@ function Camera() {
     this._projection = mat4.create();
     this._view = mat4.create();
 
+    this._projection2D = mat32.create();
+    this._view2D = mat32.create();
+
     this._needsUpdate = true;
+    this._needsUpdate2D = true;
+
     this._active = false;
 }
 Component.extend(Camera, "camera.Camera", CameraManager);
@@ -74,7 +80,7 @@ CameraPrototype.construct = function(options) {
     this.orthographic = isNullOrUndefined(options.orthographic) ? false : !!options.orthographic;
     this.orthographicSize = isNumber(options.orthographicSize) ? options.orthographicSize : 2;
 
-    this._needsUpdate = true;
+    this._needsUpdate = this._needsUpdate2D = true;
     this._active = false;
 
     return this;
@@ -89,7 +95,10 @@ CameraPrototype.destructor = function() {
     mat4.identity(this._projection);
     mat4.identity(this._view);
 
-    this._needsUpdate = true;
+    mat32.identity(this._projection2D);
+    mat32.identity(this._view2D);
+
+    this._needsUpdate = this._needsUpdate2D = true;
     this._active = false;
 
     return this;
@@ -104,7 +113,7 @@ CameraPrototype.set = function(width, height) {
     this.invHeight = 1 / this.height;
 
     this.aspect = width / height;
-    this._needsUpdate = true;
+    this._needsUpdate = this._needsUpdate2D = true;
 
     return this;
 };
@@ -128,7 +137,7 @@ CameraPrototype.setWidth = function(width) {
 
     this.invWidth = 1 / this.width;
 
-    this._needsUpdate = true;
+    this._needsUpdate = this._needsUpdate2D = true;
 
     return this;
 };
@@ -140,7 +149,7 @@ CameraPrototype.setHeight = function(height) {
 
     this.invHeight = 1 / this.height;
 
-    this._needsUpdate = true;
+    this._needsUpdate = this._needsUpdate2D = true;
 
     return this;
 };
@@ -148,7 +157,7 @@ CameraPrototype.setHeight = function(height) {
 CameraPrototype.setFov = function(value) {
 
     this.fov = value;
-    this._needsUpdate = true;
+    this._needsUpdate = this._needsUpdate2D = true;
 
     return this;
 };
@@ -156,7 +165,7 @@ CameraPrototype.setFov = function(value) {
 CameraPrototype.setNear = function(value) {
 
     this.near = value;
-    this._needsUpdate = true;
+    this._needsUpdate = this._needsUpdate2D = true;
 
     return this;
 };
@@ -164,7 +173,7 @@ CameraPrototype.setNear = function(value) {
 CameraPrototype.setFar = function(value) {
 
     this.far = value;
-    this._needsUpdate = true;
+    this._needsUpdate = this._needsUpdate2D = true;
 
     return this;
 };
@@ -172,7 +181,7 @@ CameraPrototype.setFar = function(value) {
 CameraPrototype.setOrthographic = function(value) {
 
     this.orthographic = !!value;
-    this._needsUpdate = true;
+    this._needsUpdate = this._needsUpdate2D = true;
 
     return this;
 };
@@ -180,7 +189,7 @@ CameraPrototype.setOrthographic = function(value) {
 CameraPrototype.toggleOrthographic = function() {
 
     this.orthographic = !this.orthographic;
-    this._needsUpdate = true;
+    this._needsUpdate = this._needsUpdate2D = true;
 
     return this;
 };
@@ -188,41 +197,48 @@ CameraPrototype.toggleOrthographic = function() {
 CameraPrototype.setOrthographicSize = function(size) {
 
     this.orthographicSize = mathf.clamp(size, this.minOrthographicSize, this.maxOrthographicSize);
-    this._needsUpdate = true;
+    this._needsUpdate = this._needsUpdate2D = true;
 
     return this;
 };
 
-var MAT4 = mat4.create(),
-    VEC3 = vec3.create();
-
+var toWorld_mat = mat4.create();
 CameraPrototype.toWorld = function(out, v) {
+    var mat = toWorld_mat;
+
     out[0] = 2.0 * (v[0] * this.invWidth) - 1.0;
     out[1] = -2.0 * (v[1] * this.invHeight) + 1.0;
 
-    mat4.mul(MAT4, this._projection, this._view);
-    vec3.transformMat4(out, out, mat4.inverse(MAT4, MAT4));
+    mat4.mul(mat, this._projection, this._view);
+    vec3.transformMat4(out, out, mat4.inverse(mat, mat));
     out[2] = this.near;
 
     return out;
 };
 
-
+var toScreen_vec = vec3.create(),
+    toScreen_mat = mat4.create();
 CameraPrototype.toScreen = function(out, v) {
-    vec3.copy(VEC3, v);
+    var vec = toScreen_vec,
+        mat = toScreen_mat;
 
-    mat4.mul(MAT4, this._projection, this._view);
-    vec3.transformMat4(out, VEC3, MAT4);
+    vec3.copy(vec, v);
 
-    out[0] = ((VEC3[0] + 1.0) * 0.5) * this.width;
-    out[1] = ((1.0 - VEC3[1]) * 0.5) * this.height;
+    mat4.mul(mat, this._projection, this._view);
+    vec3.transformMat4(out, vec, mat);
+
+    out[0] = ((vec[0] + 1.0) * 0.5) * this.width;
+    out[1] = ((1.0 - vec[1]) * 0.5) * this.height;
 
     return out;
 };
 
 CameraPrototype.getView = function() {
     var entity = this.entity,
-        transform = entity && (entity.components["transform.Transform3D"] || entity.components["transform.Transform2D"]);
+        transform = entity && (
+            entity.getComponent("transform.Transform3D") ||
+            entity.getComponent("transform.Transform2D")
+        );
 
     if (transform) {
         mat4.inverse(this._view, transform.getWorldMatrix());
@@ -236,6 +252,30 @@ CameraPrototype.getProjection = function() {
         this.updateMatrix();
     }
     return this._projection;
+};
+
+var getView2D_mat = mat32.create();
+CameraPrototype.getView2D = function() {
+    var entity = this.entity,
+        transform = entity && (
+            entity.getComponent("transform.Transform3D") ||
+            entity.getComponent("transform.Transform2D")
+        );
+
+    if (transform) {
+        mat32.inverse(this._view2D,
+            mat32.fromMat4(getView2D_mat, transform.getWorldMatrix())
+        );
+    }
+
+    return this._view2D;
+};
+
+CameraPrototype.getProjection2D = function() {
+    if (this._needsUpdate2D) {
+        this.updateMatrix2D();
+    }
+    return this._projection2D;
 };
 
 CameraPrototype.updateMatrix = function(force) {
@@ -254,10 +294,31 @@ CameraPrototype.updateMatrix = function(force) {
                 top = orthographicSize;
                 bottom = -top;
 
-                mat4.orthographic(this._projection, left, right, top, bottom, this.near, this.far);
+                mat4.orthographic(this._projection, top, right, bottom, left, this.near, this.far);
             }
 
             this._needsUpdate = false;
+        }
+    }
+
+    return this;
+};
+
+CameraPrototype.updateMatrix2D = function(force) {
+    var orthographicSize, right, left, top, bottom;
+
+    if (force || this._active) {
+        if (this._needsUpdate2D) {
+            this.orthographicSize = mathf.clamp(this.orthographicSize, this.minOrthographicSize, this.maxOrthographicSize);
+
+            orthographicSize = this.orthographicSize;
+            right = orthographicSize * this.aspect;
+            left = -right;
+            top = orthographicSize;
+            bottom = -top;
+
+            mat32.orthographic(this._projection2D, top, right, bottom, left);
+            this._needsUpdate2D = false;
         }
     }
 
@@ -311,7 +372,7 @@ CameraPrototype.fromJSON = function(json) {
     this.minOrthographicSize = json.minOrthographicSize;
     this.maxOrthographicSize = json.maxOrthographicSize;
 
-    this._needsUpdate = true;
+    this._needsUpdate = this._needsUpdate2D = true;
 
     return this;
 };

@@ -16,6 +16,8 @@ tape("Camera", function(assert) {
         camera = Camera.create(),
         entity = Entity.create().addComponent(transform, camera);
 
+    transform.translate([1, 1, 1]);
+
     scene.addEntity(entity);
 
     assert.deepEquals(camera.getProjection(), [
@@ -24,7 +26,14 @@ tape("Camera", function(assert) {
         0, 0, -1.0000076293945312, -1,
         0, 0, -0.1250004768371582, 0
     ]);
-    assert.deepEquals(camera.getView(), [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    assert.deepEquals(camera.getView(), [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -1, -1, -1, 1]);
+
+
+    assert.deepEquals(camera.getProjection2D(), [
+        0.3333333432674408, 0, 0, 0.5, 0, 0
+    ]);
+    assert.deepEquals(camera.getView2D(), [1, 0, 0, 1, -1, -1]);
+
 
     var cameraManager = scene.getComponentManager("camera.Camera");
     assert.equals(cameraManager.getActive(), camera);
