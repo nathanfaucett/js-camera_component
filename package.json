@@ -36,7 +36,7 @@
     "@nathanfaucett/vec3": "^0.0.3",
     "@nathanfaucett/mat32": "^0.0.6",
     "@nathanfaucett/mat4": "^0.0.5",
-    "@nathanfaucett/color": "^0.0.2",
+    "@nathanfaucett/color": "^0.0.3",
     "@nathanfaucett/is_number": "^0.0.1",
     "@nathanfaucett/is_null_or_undefined": "^0.0.1"
   }
